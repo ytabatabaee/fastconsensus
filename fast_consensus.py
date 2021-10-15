@@ -16,7 +16,7 @@ import leidenalg
 
 def check_consensus_graph(G, n_p, delta):
 	'''
-	This function checks if the networkx graph has converged. 
+	This function checks if the networkx graph has converged.
 	Input:
 	G: networkx graph
 	n_p: number of partitions while creating G
@@ -26,7 +26,7 @@ def check_consensus_graph(G, n_p, delta):
 
 
 	count = 0
-	
+
 	for wt in nx.get_edge_attributes(G, 'weight').values():
 		if wt != 0 and wt != n_p:
 			count += 1
@@ -84,7 +84,7 @@ def check_arguments(args):
 	if (args.t > 1 or args.t < 0):
 		print('Incorrect tau. run with -h for help')
 		return False
-	
+
 	return True
 
 def communities_to_dict(communities):
@@ -95,10 +95,10 @@ def communities_to_dict(communities):
 	community_index = 0
 	for c in communities:
 		community_mapping = ({str(node):community_index for index, node in enumerate(c)})
-	
+
 		result = {**result, **community_mapping}
 		community_index += 1
-	return result 
+	return result
 
 def edges_lookup_table_by_node(edges):
 	"""
@@ -110,7 +110,7 @@ def edges_lookup_table_by_node(edges):
 			result[u].append((u,v))
 		else:
 			result[u] = [(u,v)]
-			
+
 		if v in result:
 			result[v].append((v,u))
 		else:
@@ -148,7 +148,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 			communities_all = [cm.partition_at_level(cm.generate_dendrogram(graph, randomize = True, weight = 'weight'), 0) for i in range(n_p)]
 
 			for node,nbr in graph.edges():
-						
+
 				if (node,nbr) in graph.edges() or (nbr, node) in graph.edges():
 					if graph[node][nbr]['weight'] not in (0,n_p):
 						for i in range(n_p):
@@ -185,7 +185,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 
 						for i in range(n_p):
 							communities = communities_all[i]
-						
+
 							if communities[a] == communities[b]:
 								nextgraph[a][b]['weight'] += 1
 
@@ -193,23 +193,23 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 			for node in nx.isolates(nextgraph):
 					nbr, weight = sorted(graph[node].items(), key=lambda edge: edge[1]['weight'])[0]
 					nextgraph.add_edge(node, nbr, weight = weight['weight'])
-				
-				
+
+
 			graph = nextgraph.copy()
 
 
 			if check_consensus_graph(nextgraph, n_p = n_p, delta = delta):
 				break
-				
+
 		elif algorithm == 'leiden':
 			nextgraph = graph.copy()
-			
+
 			for u,v in nextgraph.edges():
 				nextgraph[u][v]['weight'] = 0.0
 
-			with mp.Pool(processes=n_p) as pool: 
+			with mp.Pool(processes=n_p) as pool:
 				communities = pool.map(do_leiden_community_detection, get_graph_and_seed(graph, n_p))
-			
+
 			for i in range(n_p):
 				node_community_lookup = communities_to_dict(communities[i])
 				for community_index, _ in enumerate(communities[i]):
@@ -232,13 +232,13 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 			for i in range(n_p):
 				node_community_lookup = communities_to_dict(communities[i])
 				n_graph_nodes = len(nextgraph.nodes())
-				
+
 				edges_lookup_table = edges_lookup_table_by_node(nextgraph.edges)
-				
+
 				for _ in range(L):
 					random_node_index = random.randint(1, n_graph_nodes)
 					neighbors = [a[1] for a in edges_lookup_table.get(str(random_node_index), [])]
-				
+
 					if (len(neighbors) >= 2):
 						a, b = random.sample(set(neighbors), 2)
 
@@ -260,7 +260,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 		elif (algorithm in ('infomap', 'lpm')):
 
 			nextgraph = graph.copy()
-			
+
 			for u,v in nextgraph.edges():
 				nextgraph[u][v]['weight'] = 0.0
 
@@ -312,7 +312,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 		elif (algorithm == 'cnm'):
 
 			nextgraph = graph.copy()
-			
+
 			for u,v in nextgraph.edges():
 				nextgraph[u][v]['weight'] = 0.0
 
@@ -326,7 +326,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 				order = list(range(N))
 				random.shuffle(order)
 				maps = dict(zip(range(N), order))
-				
+
 				mapping.append(maps)
 				inv_map.append({v: k for k, v in maps.items()})
 				G_c = nx.relabel_nodes(graph, mapping = maps, copy = True)
@@ -336,9 +336,9 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 
 
 			for i in range(n_p):
-				
+
 				edge_list = [(mapping[i][j], mapping[i][k]) for j,k in graph.edges()]
-				
+
 				for node,nbr in edge_list:
 					a, b = inv_map[i][node], inv_map[i][nbr]
 
@@ -355,7 +355,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 			for u,v in nextgraph.edges():
 				if nextgraph[u][v]['weight'] < thresh*n_p:
 					remove_edges.append((u, v))
-			
+
 			nextgraph.remove_edges_from(remove_edges)
 
 
@@ -371,9 +371,9 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 						for i in range(n_p):
 							for c in communities[i]:
 								if mapping[i][a] in c and mapping[i][b] in c:
-								
+
 									nextgraph[a][b]['weight'] += 1
-			
+
 			if check_consensus_graph(nextgraph, n_p, delta):
 				break
 
@@ -383,7 +383,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 	if (algorithm == 'louvain'):
 		return [cm.partition_at_level(cm.generate_dendrogram(graph, randomize = True, weight = 'weight'), 0) for _ in range(n_p)]
 	if algorithm == 'leiden':
-		with mp.Pool(processes=n_p) as pool: 
+		with mp.Pool(processes=n_p) as pool:
 			communities = pool.map(do_leiden_community_detection, get_graph_and_seed(graph, n_p))
 		return communities
 	if algorithm == 'infomap':
@@ -400,7 +400,7 @@ def fast_consensus(G,  algorithm = 'louvain', n_p = 20, thresh = 0.2, delta = 0.
 			order = list(range(N))
 			random.shuffle(order)
 			maps = dict(zip(range(N), order))
-				
+
 			mapping.append(maps)
 			inv_map.append({v: k for k, v in maps.items()})
 			G_c = nx.relabel_nodes(graph, mapping = maps, copy = True)
@@ -426,7 +426,7 @@ if __name__ == "__main__":
 	default_tau = {'louvain': 0.2, 'cnm': 0.7 ,'infomap': 0.6, 'lpm': 0.8}
 	if (args.t == None):
 		args.t = default_tau.get(args.alg, 0.2)
-	
+
 	if check_arguments(args) == False:
 
 		quit()
@@ -438,12 +438,12 @@ if __name__ == "__main__":
 	if not os.path.exists('out_partitions'):
 		os.makedirs('out_partitions')
 
-	
+
 	if(args.alg == 'louvain'):
 		for i in range(len(output)):
 			output[i] = group_to_partition(output[i])
-		
-	
+
+
 	i = 0
 	for partition in output:
 		i += 1
