@@ -1,5 +1,6 @@
-numpy
-networkx
-python-igraph
-python-louvain
-leidenalg
+leidenalg==0.8.8
+networkx==2.6.3
+numpy==1.21.2
+python-igraph==0.9.7
+python-louvain==0.15
+texttable==1.6.4
