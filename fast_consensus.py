@@ -361,5 +361,5 @@ if __name__ == "__main__":
         with open('out_partitions/' + str(i) , 'w') as f:
             for community in partition:
                 for node in community:
-                    print(G.node[node]['name'], end = '\t', file = f)
+                    print(G.nodes[node]['name'], end = '\t', file = f)
                 print(file = f)
