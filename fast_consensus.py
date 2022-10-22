@@ -432,6 +432,8 @@ if __name__ == "__main__":
 		quit()
 
 	G = nx.read_edgelist(args.f, nodetype=int)
+	mapping = dict(zip(G, range(0, G.number_of_nodes())))
+	G = nx.relabel_nodes(G, mapping)
 
 	output = fast_consensus(G, algorithm = args.alg, n_p = args.np, thresh = args.t, delta = args.d)
 
