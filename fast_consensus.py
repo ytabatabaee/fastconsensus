@@ -440,11 +440,15 @@ if __name__ == "__main__":
 	if not os.path.exists('out_partitions'):
 		os.makedirs('out_partitions')
 
+	if not os.path.exists('memberships'):
+		os.makedirs('memberships')
 
 	if(args.alg == 'louvain'):
 		for i in range(len(output)):
+			with open('memberships/' + str(i), 'w') as f:
+				for k, v in sorted(output[i].items()):
+					f.write(str(k+1) + "\t" + str(v+1) + '\n')
 			output[i] = group_to_partition(output[i])
-
 
 	i = 0
 	for partition in output:
@@ -452,3 +456,7 @@ if __name__ == "__main__":
 		with open('out_partitions/' + str(i) , 'w') as f:
 			for community in partition:
 				print(*community, file = f)
+		if args.alg == 'leiden':
+			with open('memberships/' + str(i), 'w') as f:
+				for j in range(len(partition.membership)):
+					f.write(str(j+1) + "\t" + str(partition.membership[j][0]+1) + '\n')
