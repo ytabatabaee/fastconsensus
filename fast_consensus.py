@@ -72,11 +72,11 @@ def group_to_partition(partition):
 
 def check_arguments(args):
 
-	if(args.d > 0.2):
-		print('delta is too high. Allowed values are between 0.02 and 0.2')
+	if(args.d > 1):
+		print('delta is too high. Allowed values are between 0 and 1')
 		return False
-	if(args.d < 0.02):
-		print('delta is too low. Allowed values are between 0.02 and 0.2')
+	if(args.d < 0):
+		print('delta is too low. Allowed values are between 0 and 1')
 		return False
 	if(args.alg not in ('louvain', 'lpm', 'cnm', 'infomap', 'leiden')):
 		print('Incorrect algorithm entered. run with -h for help')
@@ -432,20 +432,24 @@ if __name__ == "__main__":
 		quit()
 
 	G = nx.read_edgelist(args.f, nodetype=int)
-	mapping = dict(zip(G, range(0, G.number_of_nodes())))
-	G = nx.relabel_nodes(G, mapping)
+	#mapping = dict(zip(G, range(0, G.number_of_nodes())))
+	#G = nx.relabel_nodes(G, mapping)
 
 	output = fast_consensus(G, algorithm = args.alg, n_p = args.np, thresh = args.t, delta = args.d)
 
-	if not os.path.exists('out_partitions'):
-		os.makedirs('out_partitions')
+	out_partitions_path = 'out_partitions_t' + str(args.t) + '_d' + str(args.d) + '_np' + str(args.np)
+	membership_path = 'memberships_t' + str(args.t) + '_d' + str(args.d) + '_np' + str(args.np)
 
-	if not os.path.exists('memberships'):
-		os.makedirs('memberships')
+
+	if not os.path.exists(out_partitions_path):
+		os.makedirs(out_partitions_path)
+
+	if not os.path.exists(membership_path):
+		os.makedirs(membership_path)
 
 	if(args.alg == 'louvain'):
 		for i in range(len(output)):
-			with open('memberships/' + str(i), 'w') as f:
+			with open(membership_path + '/' + str(i), 'w') as f:
 				for k, v in sorted(output[i].items()):
 					f.write(str(k+1) + "\t" + str(v+1) + '\n')
 			output[i] = group_to_partition(output[i])
@@ -453,10 +457,10 @@ if __name__ == "__main__":
 	i = 0
 	for partition in output:
 		i += 1
-		with open('out_partitions/' + str(i) , 'w') as f:
+		with open(out_partitions_path + '/' + str(i) , 'w') as f:
 			for community in partition:
 				print(*community, file = f)
 		if args.alg == 'leiden':
-			with open('memberships/' + str(i), 'w') as f:
+			with open(out_partitions_path + '/' + str(i), 'w') as f:
 				for j in range(len(partition.membership)):
 					f.write(str(j+1) + "\t" + str(partition.membership[j][0]+1) + '\n')
