@@ -9,23 +9,12 @@ import numpy as np
 
 
 def check_convergence(G, n_p, delta):
-    '''
-    This function checks if the networkx graph has converged.
-    Input:
-    G: networkx graph
-    n_p: number of partitions while creating G
-    delta: if more than delta fraction of the edges have weight != n_p then returns False, else True
-    '''
-
     count = 0
-
     for wt in nx.get_edge_attributes(G, 'weight').values():
         if wt != 0 and wt != n_p:
             count += 1
-
     if count > delta * G.number_of_edges():
         return False
-
     return True
 
 
@@ -184,7 +173,7 @@ def fast_consensus(G, algorithm='louvain', n_p=20, thresh=0.2, delta=0.02):
 
     while True:
         iter_count += 1
-        print("iter ", iter_count)
+        #print("iter ", iter_count)
 
         nextgraph = graph.copy()
         nextgraph = initialize(nextgraph, 0.0)
@@ -202,14 +191,12 @@ def fast_consensus(G, algorithm='louvain', n_p=20, thresh=0.2, delta=0.02):
                 else:
                     nextgraph[node][nbr]['weight'] = graph[node][nbr]['weight']
 
-            print(nx.adjacency_matrix(nextgraph, weight='weight'))
             nextgraph = thresholding(nextgraph, n_p, thresh)
-            print(nx.adjacency_matrix(nextgraph, weight='weight'))
+            #print(nx.adjacency_matrix(nextgraph, weight='weight'))
             if check_convergence(nextgraph, n_p=n_p, delta=delta):
                 break
 
             nextgraph = triadic_closure(nextgraph, L, n_p, algorithm, None)
-
             nextgraph = connect_singletons(graph, nextgraph)
             graph = nextgraph.copy()
             if check_convergence(nextgraph, n_p=n_p, delta=delta):
@@ -230,9 +217,9 @@ def fast_consensus(G, algorithm='louvain', n_p=20, thresh=0.2, delta=0.02):
                                 continue
                             nextgraph[node][nbr]['weight'] += 1
 
-            print(nx.adjacency_matrix(nextgraph, weight='weight'))
+            #print(nx.adjacency_matrix(nextgraph, weight='weight'))
             nextgraph = thresholding(nextgraph, n_p, thresh)
-            print(nx.adjacency_matrix(nextgraph, weight='weight'))
+            #print(nx.adjacency_matrix(nextgraph, weight='weight'))
             if check_convergence(nextgraph, n_p=n_p, delta=delta):
                 break
 
@@ -309,6 +296,8 @@ if __name__ == "__main__":
         quit()
 
     G = nx.read_edgelist(args.f, nodetype=int)
+    G = nx.relabel_nodes(G, lambda x: x-1)
+
     output = fast_consensus(G, algorithm=args.alg, n_p=args.np, thresh=args.t, delta=args.d)
 
     out_partitions_path = 'out_partitions_t' + str(args.t) + '_d' + str(args.d) + '_np' + str(args.np)
@@ -320,20 +309,20 @@ if __name__ == "__main__":
     if not os.path.exists(membership_path):
         os.makedirs(membership_path)
 
+    if args.alg == 'cnm':
+        output = output[0]
+
     if args.alg == 'louvain':
         for i in range(len(output)):
-            with open(membership_path + '/' + str(i), 'w') as f:
-                for k, v in sorted(output[i].items()):
-                    f.write(str(k + 1) + "\t" + str(v + 1) + '\n')
             output[i] = group_to_partition(output[i])
 
-    i = 0
-    for partition in output:
-        i += 1
+    for i in range(len(output)):
+        output_dict = communities_to_dict(output[i])
+        with open(membership_path + '/' + str(i), 'w') as f:
+            for k, v in sorted(output_dict.items()):
+                f.write(str(k) + "\t" + str(v) + '\n')
+
+    for i in range(len(output)):
         with open(out_partitions_path + '/' + str(i), 'w') as f:
-            for community in partition:
+            for community in output[i]:
                 print(*community, file=f)
-        if args.alg == 'leiden':
-            with open(out_partitions_path + '/' + str(i), 'w') as f:
-                for j in range(len(partition.membership)):
-                    f.write(str(j + 1) + "\t" + str(partition.membership[j][0] + 1) + '\n')
